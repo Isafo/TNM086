@@ -5,6 +5,9 @@
 #include <osgUtil/Optimizer>
 
 #include <osg/ShapeDrawable>
+#include <osg/Geometry>
+#include <osg/Material>
+#include <osg/StateSet>
 #include <osgDB/ReadFile>
 #include <osg/Vec3>
 #include <osg/Vec4>
@@ -13,8 +16,11 @@
 #include <osg/Light>
 #include <osg/LightSource>
 
-
-osg::Light* createLight(int uniqueLightnr, osg::Vec4 color, osg::Vec4 position);
+// *************** function declaration *********************************
+osg::Light* createLight(int uniqueLightnr, osg::Vec4 color);
+osg::Material *setMaterial(osg::Vec4 color);
+void update(osg::PositionAttitudeTransform* lightTransform);
+// **********************************************************************
 
 int main(int argc, char *argv[]){
   
@@ -105,34 +111,37 @@ int main(int argc, char *argv[]){
   
   
   // add the lights \____________________________________________________________________
-  int uniqueLightnr = 0;
-  const int NR_OF_LIGHTS = 2;
+  const int NR_OF_LIGHTS = 3;
   osg::LightSource* lightSource[NR_OF_LIGHTS];
-  osg::Geode lightMaker[NR_OF_LIGHTS]
+  osg::PositionAttitudeTransform* lightTransform[NR_OF_LIGHTS];
+  osg::Geode* lightMarker[NR_OF_LIGHTS];
+  int uniqueLightnr;
   
-  osg::Vec4 lightPos = osg::Vec4(100.0f , 80.0f, 0.0f, 1.0f);
-  osg::Vec4 lightColor = osg::Vec4(0.3f , 0.0f, 1.0f, 1.0f);
+  osg::Vec4 lightColor[] = {osg::Vec4(0.0, 0.0, 0.8, 1.0), osg::Vec4(0.0, 0.8, 0.0, 1.0),  osg::Vec4(0.8, 0.0, 0.0, 1.0)};
+
+
+  for(uniqueLightnr = 0; uniqueLightnr < NR_OF_LIGHTS; uniqueLightnr++) {
+    
+      // create sphere to represent the light
+      lightMarker[uniqueLightnr] = new osg::Geode();
+      lightMarker[uniqueLightnr]->addDrawable(new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 50.0f)));
+      lightMarker[uniqueLightnr]->getOrCreateStateSet()->setAttribute(setMaterial(lightColor[uniqueLightnr]));
+    
+      // create the light
+      lightSource[uniqueLightnr] = new osg::LightSource();
+      lightSource[uniqueLightnr]->setLight(createLight(uniqueLightnr, lightColor[uniqueLightnr]));
+      lightSource[uniqueLightnr]->setLocalStateSetModes(osg::StateAttribute::ON);
+      
+      // light transform
+      lightTransform[uniqueLightnr] = new osg::PositionAttitudeTransform();
+      lightTransform[uniqueLightnr]->addChild(lightSource[uniqueLightnr]);
+      lightTransform[uniqueLightnr]->addChild(lightMarker[uniqueLightnr]);
+      lightTransform[uniqueLightnr]->setPosition(osg::Vec3(2560.0 * uniqueLightnr/3, 2560.0f * uniqueLightnr/3, 1250.0f));
+      
+      root->addChild(lightTransform[uniqueLightnr]);
+  }
   
-  // create the first light
-  lightSource[uniqueLightnr] = new osg::LightSource();
-  
-  osg::Light* light1 = createLight(uniqueLightnr, lightColor, lightPos);
-  lightSource[uniqueLightnr]->setLight(light1);
-  lightSource[uniqueLightnr]->setLocalStateSetModes(osg::StateAttribute::ON);
-  
-  lightTransform[i] = new osg::PositionAttitudeTransform();
-  
-  
-  root->addChild()
-  
-  uniqueLightnr++;
-  
-  
-  
-  // create second light
-  
-  
-  // not our stuff \_______________________________________________________________________________________
+  // not our stuff \______________________________________________________________________
   // Optimizes the scene-graph
   osgUtil::Optimizer optimizer;
   optimizer.optimize(root);
@@ -141,20 +150,44 @@ int main(int argc, char *argv[]){
   osgViewer::Viewer viewer;
   viewer.setSceneData(root);
   
-  return viewer.run();
+  while (!viewer.done()) {
+      viewer.realize();
+      viewer.frame();
+      update(lightTransform[2]);
+  }
   
+  //return viewer.run();
+  
+  return 0;
+}
+
+void update(osg::PositionAttitudeTransform* lightTransform) {
+  
+  osg::ElapsedTime* timer = new osg::ElapsedTime();
+  
+  lightTransform->setPosition(osg::Vec3(2560.0 * cos(timer->elapsedTime_m() /1000.0f),
+					   2560.0 * sin(timer->elapsedTime_m() /1000.0f), 1250.0f));
   
   
 }
 
-osg::Light* createLight(int uniqueLightnr, osg::Vec4 color, osg::Vec4 position) {
+osg::Material *setMaterial(osg::Vec4 color) {
+    osg::Material *material = new osg::Material();
+    material->setDiffuse(osg::Material::FRONT,  osg::Vec4(0.0, 0.0, 0.0, 1.0));
+    material->setEmission(osg::Material::FRONT, color);
+
+    return material;
+}
+
+
+osg::Light* createLight(int uniqueLightnr, osg::Vec4 color) {
   
   osg::Light* light = new osg::Light();
   light->setLightNum(uniqueLightnr);
   
-  light->setPosition(osg::Vec4(position));
+  light->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0));
   light->setDiffuse(osg::Vec4(color));
-  light->setAmbient(osg::Vec4(0.0, 0.0, 0.1, 1.0));
+  light->setAmbient(osg::Vec4(0.0, 0.0, 0.0, 1.0));
   light->setSpecular(osg::Vec4(1.0, 1.0, 1.0, 1.0));
   
   return light;
