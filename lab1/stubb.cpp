@@ -84,10 +84,14 @@ int main(int argc, char *argv[]){
   // read first objects
   osg::Node* gliderNode = osgDB::readNodeFile("glider.osg");
   osg::PositionAttitudeTransform* gliderTrans = new osg::PositionAttitudeTransform();
-  gliderTrans->setPosition(osg::Vec3(20.0f, 30.0f, 0.0f));
+  gliderTrans->setPosition(osg::Vec3(0.0f, 10.0f, 0.0f));
+  gliderTrans->setScale(osg::Vec3(10.0f, 10.0f, 10.0f));
   
-  root->addChild(gliderTrans);
   gliderTrans->addChild(gliderNode);
+  root->addChild(gliderTrans);
+
+  
+  
   /*
   // add the ground to the scene
   osg::Geode* gliderGeode = new osg::Geode();
@@ -141,6 +145,7 @@ int main(int argc, char *argv[]){
       root->addChild(lightTransform[uniqueLightnr]);
   }
   
+  
   // not our stuff \______________________________________________________________________
   // Optimizes the scene-graph
   osgUtil::Optimizer optimizer;
@@ -150,15 +155,7 @@ int main(int argc, char *argv[]){
   osgViewer::Viewer viewer;
   viewer.setSceneData(root);
   
-  while (!viewer.done()) {
-      viewer.realize();
-      viewer.frame();
-      update(lightTransform[2]);
-  }
-  
-  //return viewer.run();
-  
-  return 0;
+  return viewer.run();
 }
 
 void update(osg::PositionAttitudeTransform* lightTransform) {
@@ -166,7 +163,7 @@ void update(osg::PositionAttitudeTransform* lightTransform) {
   osg::ElapsedTime* timer = new osg::ElapsedTime();
   
   lightTransform->setPosition(osg::Vec3(2560.0 * cos(timer->elapsedTime_m() /1000.0f),
-					   2560.0 * sin(timer->elapsedTime_m() /1000.0f), 1250.0f));
+					2560.0 * sin(timer->elapsedTime_m() /1000.0f), 1250.0f));
   
   
 }
