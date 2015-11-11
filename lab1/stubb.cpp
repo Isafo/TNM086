@@ -150,15 +150,19 @@ int main(int argc, char *argv[]){
   osgViewer::Viewer viewer;
   viewer.setSceneData(root);
   
+  /*if (!viewer.isRealized()){
+    viewer.realize();
+  }
+  
   while (!viewer.done()) {
       viewer.realize();
       viewer.frame();
       update(lightTransform[2]);
   }
+  */
+  //return 0;
+  return viewer.run();
   
-  //return viewer.run();
-  
-  return 0;
 }
 
 void update(osg::PositionAttitudeTransform* lightTransform) {

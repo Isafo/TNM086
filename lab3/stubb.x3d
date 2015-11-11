@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+Copyright 2013, Karljohan Lundin Palmerius
+
+This is a stubb for laborations on multi-modal display
+systems in the VR laboratory. It will disable the X3D
+navigation to allow for viewpoint calibration and tracking,
+and load libraries commonly used in the VR laboratory.
+
+-->
+
+<Group>
+  <PythonScript url="urn:candy:python/CorrectViewpoint.py"/>
+
+  <PythonScript url="urn:candy:python/AutoLoadSO.py"/>
+  
+  <PythonScript url="urn:candy:python/AutoLoadSO.py">
+    <MetadataString 
+	name="library" value="vhtk" containerField="references"/>
+  </PythonScript>
+  
+
+    <!-- stol 1-->      
+    <Transform DEF="STOL" translation="0.0 0.0 0.0"> 
+      <Transform rotation="1 0 0 0.52359 "> 
+	<Transform rotation="0 1 0 0.7853 "> <!--snurr av stol kring y (i radianer)-->
+	    <Shape DEF="SITTS_SHAPE">
+		<Appearance>
+		  <Material diffuseColor="0.2 0.7 0.9"/>
+		  
+		  <SmoothSurface useRelativeValues="false" stiffness="0.6"/>
+		  
+		  <!--<FrictionalSurface dynamicFriction="0.6" staticFriction="0.8" stiffness="800" useRelativeValues="false" damping="4"/>-->
+		</Appearance>
+		<Box DEF="SITS_BOX" size='0.04 0.01 0.04' />
+		
+	    </Shape>
+	    
+	    <Transform DEF="back" translation="0.0 0.025 0.015">
+		<Shape DEF="back_SHAPE">
+		    <Appearance>
+		      <Material DEF="backColor" diffuseColor="0.1 0.8 0.9"/>
+		      
+		      <SmoothSurface useRelativeValues="false" stiffness="0.4"/>
+		      
+		      <!--<FrictionalSurface dynamicFriction="0.2" staticFriction="0.8" useRelativeValues="false" stiffness="800" damping="3" />-->
+		    </Appearance>
+		    <Box DEF="backBox" size='0.04 0.04 0.01'/>
+		</Shape>
+	    </Transform>
+	    
+	    <!-- Translerar benet halva sin egen längd neråt + halva stolsistsen neråt. Flyttar halva stolsitsbredden minus halva benets "bredd" så att benet hamnar längs kanten på sistsen (i x o z led)-->
+	    <Transform DEF="BEN_1" translation="0.015 -0.029 0.015">
+	      <Shape DEF="BEN_SHAPE">
+		  <Appearance>
+		    <Material diffuseColor="0.1 0.8 0.9"/>
+		    
+		    <SmoothSurface useRelativeValues="false" stiffness="0.8"/>
+		    
+		    <!--<FrictionalSurface dynamicFriction="0.2" staticFriction="0.2" stiffness="800" useRelativeValues="false" damping="1"/>-->
+		  </Appearance>
+		  <Box DEF="BEN_BOX" size='0.01 0.05 0.01'/>
+	      </Shape>
+	    </Transform>
+	      
+	    <Transform DEF="BEN_2" translation="-0.015 -0.029 0.015">
+		<Shape USE="BEN_SHAPE"/>
+	    </Transform>
+	    
+	    <Transform DEF="BEN_3" translation="-0.015 -0.029 -0.015">
+		<Shape USE="BEN_SHAPE"/>
+	    </Transform>
+	    
+	    <Transform DEF="BEN_4" translation="0.015 -0.029 -0.015">
+		<Shape USE="BEN_SHAPE"/>
+	    </Transform>
+	</Transform>
+      </Transform>
+    </Transform>
+    
+    <Transform DEF="Back" translation="0.09 0.0 0.0">
+      <Shape>
+	<Appearance>
+	  <Material />
+	  <ImageTexture url="perlinNoise.png" DEF="IMT" repeatS="false" repeatT="false"/>
+	  <DepthMapSurface 
+			  maxDepth="0.003"
+			   >
+	    <ImageTexture containerField="depthMap" url="perlinNoise.png" repeatS="false" repeatT="false"/>
+	  </DepthMapSurface>
+	</Appearance>
+	<Sphere radius="0.03" />
+    </Shape>
+  </Transform>
+
+     <PythonScript DEF="PY" url="color.py"/>   
+    
+    <ROUTE
+      fromNode='backBox' fromField='isTouched'
+      toNode='PY' toField='color' />
+    
+    <ROUTE
+      fromNode='PY' fromField='color'
+      toNode='backColor' toField='diffuseColor' />
+  
+</Group>
+

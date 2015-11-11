@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<X3D profile='Full' version='3.2'>
+  <head>
+    <meta name='title' content='Viewpoint.x3d'/>
+    <meta name='description' content='X3D Viewpoint example.
+      Experiement with the field values to observe their effects.
+      Use the browser to switch viewpoints.'/>
+    <meta name='author' content='SenseGraphics AB, 2006-2009'/>
+  </head>
+  
+  <Scene>
+    <Viewpoint
+        description='View 0'
+        centerOfRotation='0 0 0'
+        position='0 0 0.6'
+        orientation='1 0 0 0'
+        fieldOfView='0.78'
+        jump='true'
+        retainUserOffsets='true' />
+    
+    <Transform rotation='1 0 -1 0.5'>
+    <Shape>
+      <Box size='0.2 0.2 0.2' />
+      <Appearance>
+        <Material diffuseColor='1 0 0' />
+      </Appearance>
+    </Shape>
+    </Transform>
+        
+  </Scene>
+</X3D>
