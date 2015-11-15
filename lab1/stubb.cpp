@@ -17,6 +17,8 @@
 #include <osg/LightSource>
 #include <osg/AnimationPath>
 #include <osg/MatrixTransform>
+#include <osg/LOD>
+#include <osgUtil/Simplifier>
 
 // *************** function declaration *********************************
 osg::Light* createLight(int uniqueLightnr, osg::Vec4 color);
@@ -29,22 +31,23 @@ void update(osg::PositionAttitudeTransform* lightTransform);
 class RotateCB : public osg::NodeCallback
 {
 public:
-    RotateCB() : _angle( 0. ) {}
+    RotateCB() : angle( 0. ) {}
 
     virtual void operator()( osg::Node* node,
             osg::NodeVisitor* nv )
     {
         // Normally, check to make sure we have an update
         //   visitor, not necessary in this simple example.
-        osg::MatrixTransform* mtLeft =
+        osg::MatrixTransform* mtRotate =
                 dynamic_cast<osg::MatrixTransform*>( node );
         osg::Matrix mR, mT;
-        mT.makeTranslate( -6., 0., 0. );
-        mR.makeRotate( _angle, osg::Vec3( 0., 0., 1. ) );
-        mtLeft->setMatrix( mR * mT );
+	//translat to the "middel" of the world
+        mT.makeTranslate( 2.5f, 2.5f, 0 );
+        mR.makeRotate( angle, osg::Vec3( 0., 0., 1. ) );
+        mtRotate->setMatrix( mR * mT );
 
         // Increment the angle for the next from.
-        _angle += 0.01;
+        angle += 0.01;
 
         // Continue traversing so that OSG can process
         //   any other nodes with callbacks.
@@ -52,7 +55,7 @@ public:
     }
 
 protected:
-    double _angle;
+    double angle;
 };
 
 int main(int argc, char *argv[]){
@@ -146,7 +149,7 @@ int main(int argc, char *argv[]){
     
       // create sphere to represent the light
       lightMarker[uniqueLightnr] = new osg::Geode();
-      lightMarker[uniqueLightnr]->addDrawable(new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 0.05f)));
+      lightMarker[uniqueLightnr]->addDrawable(new osg::ShapeDrawable(new       osg::Box(osg::Vec3(0.0f, 0.0f, 0.0f), 0.05f)));//osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 0.05f)));
       lightMarker[uniqueLightnr]->getOrCreateStateSet()->setAttribute(setMaterial(lightColor[uniqueLightnr]));
     
       // create the light
@@ -157,7 +160,13 @@ int main(int argc, char *argv[]){
       
       // light transform
       lightTransform[uniqueLightnr] = new osg::PositionAttitudeTransform();
-      lightTransform[uniqueLightnr]->setPosition(osg::Vec3(2 * uniqueLightnr, 2 * uniqueLightnr, 4.0f));
+      //lightTransform[uniqueLightnr]->setPosition(osg::Vec3(2 * uniqueLightnr, 2 * uniqueLightnr, 4.0f));
+      if(uniqueLightnr == 0 )
+	lightTransform[0]->setPosition(osg::Vec3(0, 0, 4.0f));      
+      else if(uniqueLightnr == 1 )
+	lightTransform[1]->setPosition(osg::Vec3(4, 4, 4.0f));
+      else if(uniqueLightnr == 2 )
+	lightTransform[2]->setPosition(osg::Vec3(2, 0, 4.0f));
       
       // add light marker and lightsource to transform
       lightTransform[uniqueLightnr]->addChild(lightSource[uniqueLightnr]);
@@ -165,15 +174,54 @@ int main(int argc, char *argv[]){
       
       if(uniqueLightnr == 2 )
       {
-	//lightTransform[uniqueLightnr]->setUpdateCallback( new RotateCB );
+	  // Create a MatrixTransform to set setUpdateCallback on.
+	  osg::ref_ptr<osg::MatrixTransform> LightMove =
+		  new osg::MatrixTransform;
+	  LightMove->setName( "Moving Light" );
+	  // Set data variance to DYNAMIC to let OSG know that we
+	  //   will modify this node during the update traversal.
+	  LightMove->setDataVariance( osg::Object::DYNAMIC );
+	  // Set the update callback.
+	  LightMove->setUpdateCallback( new RotateCB );
+	  LightMove->addChild( lightTransform[uniqueLightnr]);
+	  // add transform to root
+	  root->addChild( LightMove.get() );
       }
-      
-      // add transform to root
-      root->addChild(lightTransform[uniqueLightnr]);
+      else
+      {
+	// add transform to root
+	root->addChild(lightTransform[uniqueLightnr]);
+      }
   }
- 
   
-
+  // add the LOD \____________________________________________________________________
+  osg::LOD* lod = new osg::LOD;
+  // read  object to change
+  osg::Node* dumptruckNode = osgDB::readNodeFile("dumptruck.osg");
+  osg::PositionAttitudeTransform* dumptruckTrans = new osg::PositionAttitudeTransform();
+  dumptruckTrans->setPosition(osg::Vec3(2.0f, 4.0f, 3.0f));
+  dumptruckTrans->setScale(osg::Vec3(0.07f, 0.07f, 0.07f));  
+  dumptruckTrans->addChild(dumptruckNode);
+  
+  // reduce the number of vertices and faces
+  osgUtil::Simplifier simplifier;
+  osg::Node* dumptruckMediumNode = dynamic_cast<osg::Node*>( dumptruckNode->clone( osg::CopyOp::DEEP_COPY_ALL ));
+  simplifier.setSampleRatio( 0.6f );
+  dumptruckMediumNode->accept( simplifier );
+  osg::PositionAttitudeTransform* dumptruckMediumTrans = new osg::PositionAttitudeTransform();
+  dumptruckMediumTrans->setPosition(osg::Vec3(2.0f, 4.0f, 3.0f));
+  dumptruckMediumTrans->setScale(osg::Vec3(0.07f, 0.07f, 0.07f));  
+  dumptruckMediumTrans->addChild(dumptruckMediumNode);
+  
+  osg::PositionAttitudeTransform* dumptruckLowTrans = dynamic_cast<osg::PositionAttitudeTransform*>( dumptruckTrans->clone( osg::CopyOp::DEEP_COPY_ALL ));
+  simplifier.setSampleRatio( 0.1f );
+  dumptruckLowTrans->accept( simplifier );
+  // add object to lod
+  lod->addChild(dumptruckTrans, 0.f, 20.f); 
+  lod->addChild(dumptruckMediumTrans, 20.f, 40.f);  
+  lod->addChild(dumptruckLowTrans, 40.f, 100.f);
+  root->addChild(lod);
+  
   // not our stuff \______________________________________________________________________
   // Optimizes the scene-graph
   osgUtil::Optimizer optimizer;
