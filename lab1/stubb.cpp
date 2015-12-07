@@ -36,8 +36,7 @@ public:
     virtual void operator()( osg::Node* node,
             osg::NodeVisitor* nv )
     {
-        // Normally, check to make sure we have an update
-        //   visitor, not necessary in this simple example.
+        // we know its a MatrixTransform.
         osg::MatrixTransform* mtRotate =
                 dynamic_cast<osg::MatrixTransform*>( node );
         osg::Matrix mR, mT;
@@ -58,15 +57,61 @@ protected:
     double angle;
 };
 
-int main(int argc, char *argv[]){
   
-  osg::ref_ptr<osg::Group> root = new osg::Group;
+// add intersector line globaly
+osg::Vec3 line_p0 (-6, 0, 5);
+osg::Vec3 line_p1 ( -1, 0, 5);
+osg::ref_ptr<osg::Group> root = new osg::Group;
 
-#if 0
+
+const int NR_OF_LIGHTS = 3;
+osg::LightSource* lightSource[NR_OF_LIGHTS];
+osg::PositionAttitudeTransform* lightTransform[NR_OF_LIGHTS];
+osg::Geode* lightMarker[NR_OF_LIGHTS];
+  
+osg::Light* blinkLight = new osg::Light();
+
+class CheckIntersect : public osg::NodeCallback
+{
+public:
+  CheckIntersect() {}
+  
+  //void checkIntersectFunction()
+  virtual void operator()( osg::Node* node,
+            osg::NodeVisitor* nv )
+  {
+    osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector = new osgUtil::LineSegmentIntersector(line_p0, line_p1);
+    // we know its a MatrixTransform.
+    osg::MatrixTransform* mt = dynamic_cast<osg::MatrixTransform*>( node );
+   
+    osgUtil::IntersectionVisitor intersectVisitor(intersector.get());
+    root->accept(intersectVisitor);
+    
+    if(intersector->containsIntersections())
+    {
+      std::cout << "innanför \n";
+      blinkLight->setDiffuse(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+      lightMarker[0]->getOrCreateStateSet()->setAttribute(setMaterial(osg::Vec4(1.0, 1.0, 1.0, 1.0)));
+      
+    }
+    else
+    {
+      std::cout << "utanför \n";
+      lightMarker[0]->getOrCreateStateSet()->setAttribute(setMaterial(osg::Vec4(0.0, 0.0, 0.8, 1.0)));
+      blinkLight->setDiffuse(osg::Vec4(0.0, 0.0, 0.8, 1.0));
+      blinkLight->setAmbient(osg::Vec4(0.0, 0.0, 0.0, 1.0));
+      blinkLight->setSpecular(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+      
+    }
+  }
+};
+
+int main(int argc, char *argv[]){
+
+  // global ful lösning
+  blinkLight->setLightNum(0);  
+  blinkLight->setPosition(osg::Vec4(0.0, 0.0, 0.0, 1.0));
   /// Line ---
-
-  osg::Vec3 line_p0 (-1, 0, 0);
-  osg::Vec3 line_p1 ( 1, 0, 0);
   
   osg::ref_ptr<osg::Vec3Array> vertices = new osg::Vec3Array();
   vertices->push_back(line_p0);
@@ -85,10 +130,11 @@ int main(int argc, char *argv[]){
   lineGeode->addDrawable(linesGeom);
   lineGeode->getOrCreateStateSet()->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
   
-  root->addChild(lineGeode);
+  root->addChild(lineGeode); 
+  
   
   /// ---
-#endif
+
 
   const float dimX = 6;
   const float dimY = 6;
@@ -108,6 +154,16 @@ int main(int argc, char *argv[]){
       ground->setHeight(i, j, cos(i) + sin(j));
     }
   }
+  /*
+  //add texture (ej klart)
+ 
+  Image *image = osgDB::readImageFile("texture.png");
+  osg::Texture2D *texture = new Texture2D;
+  texture->setImage(image);
+  
+  StateSet *sphereStateSet = sphere->getOrCreateStateSet();
+  sphereStateSet->setAttribute(material);
+  sphereStateSet->setTextureAttributeAndModes(0, texture, StateAttribute::ON);*/
   
   // add the ground to the scene
   osg::Geode* groundGeode = new osg::Geode();
@@ -135,10 +191,6 @@ int main(int argc, char *argv[]){
   root->addChild(cessenaTrans);
   
   // add the lights \____________________________________________________________________
-  const int NR_OF_LIGHTS = 3;
-  osg::LightSource* lightSource[NR_OF_LIGHTS];
-  osg::PositionAttitudeTransform* lightTransform[NR_OF_LIGHTS];
-  osg::Geode* lightMarker[NR_OF_LIGHTS];
   int uniqueLightnr;
   
   osg::Vec4 lightColor[] = {osg::Vec4(0.0, 0.0, 0.8, 1.0), osg::Vec4(0.0, 0.8, 0.0, 1.0),  osg::Vec4(0.8, 0.0, 0.0, 1.0)};
@@ -151,10 +203,14 @@ int main(int argc, char *argv[]){
       lightMarker[uniqueLightnr] = new osg::Geode();
       lightMarker[uniqueLightnr]->addDrawable(new osg::ShapeDrawable(new       osg::Box(osg::Vec3(0.0f, 0.0f, 0.0f), 0.05f)));//osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 0.05f)));
       lightMarker[uniqueLightnr]->getOrCreateStateSet()->setAttribute(setMaterial(lightColor[uniqueLightnr]));
+      lightMarker[uniqueLightnr]->setDataVariance( osg::Object::DYNAMIC );
     
       // create the light
       lightSource[uniqueLightnr] = new osg::LightSource();
-      lightSource[uniqueLightnr]->setLight(createLight(uniqueLightnr, lightColor[uniqueLightnr]));
+      if(uniqueLightnr == 0 )
+	lightSource[uniqueLightnr]->setLight(blinkLight);  
+      else 
+	lightSource[uniqueLightnr]->setLight(createLight(uniqueLightnr, lightColor[uniqueLightnr]));
       lightSource[uniqueLightnr]->setLocalStateSetModes(osg::StateAttribute::ON);
       lightSource[uniqueLightnr]->setStateSetModes(*lightSS,osg::StateAttribute::ON);
       
@@ -172,7 +228,22 @@ int main(int argc, char *argv[]){
       lightTransform[uniqueLightnr]->addChild(lightSource[uniqueLightnr]);
       lightTransform[uniqueLightnr]->addChild(lightMarker[uniqueLightnr]);
       
-      if(uniqueLightnr == 2 )
+      if(uniqueLightnr == 0 )
+      {
+	  // Create a MatrixTransform to set setUpdateCallback on.
+	  osg::ref_ptr<osg::MatrixTransform> LightChange =
+		  new osg::MatrixTransform;
+	  LightChange->setName( "color Light" );
+	  // Set data variance to DYNAMIC to let OSG know that we
+	  //   will modify this node during the update traversal.
+	  LightChange->setDataVariance( osg::Object::DYNAMIC );
+	  // Set the update callback.
+	  LightChange->addChild( lightTransform[uniqueLightnr]);
+	  LightChange->setUpdateCallback( new CheckIntersect );
+	  // add transform to root
+	  root->addChild( LightChange.get() );
+      }
+      else if(uniqueLightnr == 2 )
       {
 	  // Create a MatrixTransform to set setUpdateCallback on.
 	  osg::ref_ptr<osg::MatrixTransform> LightMove =
@@ -221,6 +292,41 @@ int main(int argc, char *argv[]){
   lod->addChild(dumptruckMediumTrans, 20.f, 40.f);  
   lod->addChild(dumptruckLowTrans, 40.f, 100.f);
   root->addChild(lod);
+  
+  
+  // Animation Phath ______________________________________________________________________
+  
+  // Create animation path
+  osg::ref_ptr<osg::AnimationPath> path = new osg::AnimationPath;
+  
+  // Define control points
+  /*osg::AnimationPath::ControlPoint CP0(osg::Vec3( 5.f, 5.f, 5.f ));
+  osg::AnimationPath::ControlPoint CP1(osg::Vec3( -5.f, 5.f, 5.f ), osg::Quat(-osg::PI/6,osg::Vec3( 0.f, 0.f, 1.f )));
+  osg::AnimationPath::ControlPoint CP2 (osg::Vec3( -5.f, -5.f, 5.f ), osg::Quat(-osg::PI*2/6,osg::Vec3( 0.f, 0.f, 1.f )), osg::Vec3( 0.5f, 0.5f, 0.5f ));
+  osg::AnimationPath::ControlPoint CP3 (osg::Vec3( 5.f, -5.f, 6.f ) ,osg::Quat(osg::PI*3/6,osg::Vec3( 0.f, 0.f, 1.f )));
+  osg::AnimationPath::ControlPoint CP4 (osg::Vec3( 5.f, 5.f, 5.f ));*/
+  osg::AnimationPath::ControlPoint CP0(osg::Vec3( 5.f, 5.f, 5.f ));
+  osg::AnimationPath::ControlPoint CP1(osg::Vec3( -5.f, 5.f, 5.f ));
+  osg::AnimationPath::ControlPoint CP2 (osg::Vec3( -5.f, -5.f, 5.f ));
+  osg::AnimationPath::ControlPoint CP3 (osg::Vec3( 5.f, -5.f, 6.f ));
+  osg::AnimationPath::ControlPoint CP4 (osg::Vec3( 5.f, 5.f, 5.f ));
+
+  // Insert them to the path
+  path->insert( 0.0f, CP0 );
+  // time, point
+  path->insert( 1.0f, CP1 );
+  path->insert( 2.0f, CP2 );
+  path->insert( 3.0f, CP3 );
+  path->insert( 4.0f, CP4 );
+  path->insert( 4.0f, CP4 );
+  
+  // Define animation path callback
+  osg::ref_ptr<osg::AnimationPathCallback> APCallback = new osg::AnimationPathCallback(path.get());
+  
+  // Update the matrix transform (of the object) with the animation path
+  //cessenaTrans->setUpdateCallback( APCallback.get() );
+  gliderTrans-> setUpdateCallback( APCallback.get() );
+  
   
   // not our stuff \______________________________________________________________________
   // Optimizes the scene-graph

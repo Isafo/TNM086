@@ -79,7 +79,7 @@ and load libraries commonly used in the VR laboratory.
     </Transform> <!-- X-axis rotation -->
   </Transform> <!-- Y-axis rotation -->
     
-  <Transform DEF="depthMap" translation="0.09 0.0 0.0">
+ <Transform DEF="depthMap" translation="0.09 0.0 0.0">
     <Shape>
       <Appearance>
 	      <Material />
@@ -90,18 +90,78 @@ and load libraries commonly used in the VR laboratory.
       </Appearance>
       <Box size="0.03 0.03 0.03" />
     </Shape>
-  </Transform>
-  
-<!--
-<PythonScript DEF="PY" url="color.py"/>   
+ </Transform>
+ 
+<!--<Transform translation="-0.12 0.0 0.0">
+	<Shape>
+	<LineSet DEF="magnetLine" vertexCount='9'>
+          <Coordinate point='0.0707 0 0
+                     0.05 -0.05 0
+                     0 -0.0707 0
+                     -0.05 -0.05 0
+                     -0.0707 0 0
+                     -0.05 0.05 0
+                     0 0.0707 0
+                     0.05 0.05 0
+                     0.0707 0 0' />
+          <Color 
+              color='1 1 0 
+                     1 1 0
+                     1 0 0
+                     1 0 0 
+                     0 0 1
+                     0 0 1
+                     0 1 0
+                     0 1 0                     
+                     1 1 0' />
+        </LineSet>
+        <Appearance>
+          <LineProperties
+              applied='true' linetype='2'
+              linewidthScaleFactor='6' />
+        </Appearance>
+	</Shape>
+</Transform>-->
+
+<Transform DEF="lineTrans" translation="-0.12 0.0 0.0">
+	<Shape>
+		<LineSet DEF="magnetLine" vertexCount='2'>
+			<Coordinate DEF="pointPos" point='0.0 0.05 0
+											  0.0 -0.05 0' />
+			<Color color='0 0 1 
+						  1 0 0' />	
+		</LineSet>
+        <Appearance>
+			<LineProperties applied='true' linetype='2'
+							linewidthScaleFactor='6' />
+        </Appearance>
+	</Shape>
+	
+	<ForceField DEF="lineForce" force="0.0 0.0 0.0" />
+</Transform>
+ 
+
+<PythonScript DEF="colorT" url="color.py"/> 
+<PythonScript DEF="magnet" url="magnet.py"/> 
+ 
+<ROUTE
+	fromNode='backBox' fromField='isTouched'
+	toNode='colorT' toField='color' />
     
 <ROUTE
-fromNode='backBox' fromField='isTouched'
-toNode='PY' toField='color' />
-    
-<ROUTE
-fromNode='PY' fromField='color'
-toNode='backColor' toField='diffuseColor' />
--->
+	fromNode='colorT' fromField='color'
+	toNode='backColor' toField='diffuseColor' />
+
+<!-- forcefield http://www.h3dapi.org/modules/mediawiki/index.php/Force_effects -->
+
+<IMPORT inlineDEF="H3D_EXPORTS" exportedDEF="HDEV" AS="HDEV"/>
+
+<ROUTE fromNode='HDEV' fromField='trackerPosition' toNode='magnet' toField='forceM' />
+<ROUTE fromNode='lineTrans' fromField='translation' toNode='magnet' toField='forceM' />
+<ROUTE fromNode="HDEV" fromField="trackerOrientation" toNode='magnet' toField='forceM' />
+
+<ROUTE fromNode='magnet' fromField='forceM' toNode='lineForce' toField='force' />
+
+
 </Group>
 
