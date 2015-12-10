@@ -152,8 +152,6 @@ and load libraries commonly used in the VR laboratory.
 	fromNode='colorT' fromField='color'
 	toNode='backColor' toField='diffuseColor' />
 
-<!-- forcefield http://www.h3dapi.org/modules/mediawiki/index.php/Force_effects -->
-
 <IMPORT inlineDEF="H3D_EXPORTS" exportedDEF="HDEV" AS="HDEV"/>
 
 <ROUTE fromNode='HDEV' fromField='trackerPosition' toNode='magnet' toField='forceM' />
